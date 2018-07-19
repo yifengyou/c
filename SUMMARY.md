@@ -1,24 +1,6 @@
-# 汇编C语言
+# Summary
 
-## 本仓库内容
-
-1. 汇编C语言
-2. C语言相关面试题解析
-
-```
-Something I hope you know before go into the coding~
-First, please watch or star this repo, I'll be more happy if you follow me.
-Bug report, questions and discussion are welcome, you can post an issue or pull a request.
-```
-
-## 相关站点
-
-* GitHub地址:<https://github.com/yifengyou/learn-c>
-
-* GibBook地址:<https://yifengyou.gitbooks.io/learn-c/content/>
-
-## 目录
-
+* [汇编C语言](README.md)
 * [汇编](docs/汇编/汇编.md)
     * [进制](docs/汇编/进制.md)
     * [数据宽度](docs/汇编/数据宽度.md)
@@ -55,30 +37,3 @@ Bug report, questions and discussion are welcome, you can post an issue or pull 
     * [宏定义](docs/C语言/宏定义.md)
     * [头文件](docs/C语言/头文件头文件.md)
 
-
-
-## 参考博客
-
-
-
-
-
-## 参考书籍
-
-![1531969071332.png](image/1531969071332.png)
-
-![1531968842238.png](image/1531968842238.png)
-
-![1531968976246.png](image/1531968976246.png)
-
-## 参考教程
-
-滴水论坛汇编C语言C++基础原理教程:<https://chuanke.baidu.com/v1911416-189554-1078110.html>
-
-
-## 总结
-
-```
-1. 懂汇编的娃才能学好C语言~
-2. 基础永远值得花费90%的精力去学习加强~
-```
