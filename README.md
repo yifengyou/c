@@ -9,9 +9,9 @@
 
 ## 本仓库内容
 
-1. 汇编C语言
-2. C语言相关面试题解析
-3. C语言知识导图
+1. 汇编C语言 - 不了解体系结构肿么玩？
+2. C语言相关面试题解析 - 面试官总会问基础滴
+3. C语言知识导图-真去覆盖所有知识点
 
 ```
 Something I hope you know before go into the coding~
@@ -89,10 +89,22 @@ Bug report, questions and discussion are welcome, you can post an issue or pull 
 
 滴水论坛汇编C语言C++基础原理教程:<https://chuanke.baidu.com/v1911416-189554-1078110.html>
 
+## 神器安利
+
+### Mindjet Mindmanager
+
+![1533265927661.png](image/1533265927661.png)
+
+![1533265955787.png](image/1533265955787.png)
+
+### 宇宙最强调试器ddd
+
+![1533266041562.png](image/1533266041562.png)
 
 ## 总结
 
 ```
-1. 懂汇编的娃才能学好C语言
-2. 基础永远值得花费90%的精力去学习加强
+1. 懂汇编的娃才能学好C语言~
+2. 基础永远值得花费90%的精力去学习加强~
+3. 思维导图真特么学习记忆神器~
 ```
