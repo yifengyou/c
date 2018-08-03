@@ -1,9 +1,17 @@
 # 汇编C语言
 
+## 宗旨
+```
+用汇编学C语言本质
+
+用思维导图理解C语言语法
+```
+
 ## 本仓库内容
 
 1. 汇编C语言
 2. C语言相关面试题解析
+3. C语言知识导图
 
 ```
 Something I hope you know before go into the coding~
@@ -55,7 +63,13 @@ Bug report, questions and discussion are welcome, you can post an issue or pull 
     * [宏定义](docs/C语言/宏定义.md)
     * [头文件](docs/C语言/头文件头文件.md)
 
+## 思维导图
 
+![1533265631681.png](image/1533265631681.png)
+
+![1533265668198.png](image/1533265668198.png)
+
+![1533265688600.png](image/1533265688600.png)
 
 ## 参考博客
 
