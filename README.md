@@ -1,17 +1,10 @@
 # 汇编C语言
 
-## 宗旨
-```
-用汇编学C语言本质
-
-用思维导图理解C语言语法
-```
-
 ## 本仓库内容
 
-1. 汇编C语言 - 不了解体系结构肿么玩？
+1. 汇编C语言 - 不了解体系结构肿么玩？用汇编学C语言本质
 2. C语言相关面试题解析 - 面试官总会问基础滴
-3. C语言知识导图-真去覆盖所有知识点
+3. C语言知识导图-争取覆盖所有知识点
 
 ```
 Something I hope you know before go into the coding~
@@ -22,7 +15,6 @@ Bug report, questions and discussion are welcome, you can post an issue or pull 
 ## 相关站点
 
 * GitHub地址:<https://github.com/yifengyou/learn-c>
-
 * GibBook地址:<https://yifengyou.gitbooks.io/learn-c/content/>
 
 ## 目录
@@ -70,12 +62,6 @@ Bug report, questions and discussion are welcome, you can post an issue or pull 
 ![1533265668198.png](image/1533265668198.png)
 
 ![1533265688600.png](image/1533265688600.png)
-
-## 参考博客
-
-
-
-
 
 ## 参考书籍
 
