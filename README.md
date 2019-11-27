@@ -68,6 +68,12 @@ Bug report, questions and discussion are welcome, you can post an issue or pull 
     * [类](docs/C++/类.md)
 * [PE解析器](docs/PE解析器.md)
 * [ELF解析器](docs/ELF解析器.md)
+* [crackme](crackme/crackme.md)
+    * [crackme01](crackme/crackme01/crackme01.md)
+    * [crackme02](crackme/crackme02/crackme02.md)
+* [教程](docs/教程.md)
+    * [汇编、C语言基础教程](docs/教程/汇编、C语言基础教程.md)
+
 
 ## 思维导图
 
@@ -76,6 +82,8 @@ Bug report, questions and discussion are welcome, you can post an issue or pull 
 ![1533265668198.png](image/1533265668198.png)
 
 ![1533265688600.png](image/1533265688600.png)
+
+![20191127_120421_78](image/20191127_120421_78.png)
 
 ## 参考书籍
 

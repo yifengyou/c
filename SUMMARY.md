@@ -49,4 +49,9 @@
     * [类](docs/C++/类.md)
 * [PE解析器](docs/PE解析器.md)
 * [ELF解析器](docs/ELF解析器.md)
+* [crackme](crackme/crackme.md)
+    * [crackme01](crackme/crackme01/crackme01.md)
+    * [crackme02](crackme/crackme02/crackme02.md)
+* [教程](docs/教程.md)
+    * [汇编、C语言基础教程](docs/教程/汇编、C语言基础教程.md)
 
