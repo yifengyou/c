@@ -119,9 +119,68 @@ int arr[n];           /* VLA：运行期才确定大小 */
 sizeof(arr);          /* 必须运行期计算！这是唯一"运行期sizeof" */
 ```
 
+## 实战：编译提取汇编逐行解析（真实输出）
+
+> 以下汇编全部为**真实编译产物**，指令逐字来自 gcc 输出，`;` 注释为整理所加。提取流程见 `.opencode/skills/c-dev/SKILL.md`；环境噪音说明见[数组·实战](数组.md)。
+> 实测环境：Ubuntu 24.04 / gcc 13.3.0 / x86-64（System V ABI）/ Intel 语法
+
+### 实验1：sizeof(x++) —— 证明"不求值"与"编译期"
+
+```c
+int main(void)
+{
+    int x = 5;
+    int a = sizeof(x++);        /* x不会变！表达式根本不求值 */
+    int b = sizeof(int);        /* 4 */
+    int c = sizeof(long);       /* 8 */
+    int d = sizeof(double);     /* 8 */
+    return a + b + c + d + x;   /* 4+4+8+8+5 = 29 → 实测退出码29 ✔ */
+}
+```
+
+```asm
+main:
+    endbr64
+    push    rbp
+    mov     rbp, rsp
+    mov     DWORD PTR -20[rbp], 5     ; x = 5
+    mov     DWORD PTR -16[rbp], 4     ; a = sizeof(x++) = 4
+    ...                                  ; ★没有读x的指令！更没有inc/加1！
+                                       ;   sizeof直接给出常量4——x++被整个丢弃
+    mov     DWORD PTR -12[rbp], 4     ; b = sizeof(int) = 4（LP64下int仍4字节）
+    mov     DWORD PTR -8[rbp], 8      ; c = sizeof(long) = 8（64位指针同宽的long）
+    mov     DWORD PTR -4[rbp], 8      ; d = sizeof(double) = 8
+    mov     edx, DWORD PTR -16[rbp]   ; —— 求和开始 ——
+    mov     eax, DWORD PTR -12[rbp]
+    add     edx, eax
+    mov     eax, DWORD PTR -8[rbp]
+    add     edx, eax
+    mov     eax, DWORD PTR -4[rbp]
+    add     edx, eax
+    mov     eax, DWORD PTR -20[rbp]   ; ★读x —— 还是5（从未被++过）
+    add     eax, edx                  ; 29
+    pop     rbp
+    ret
+```
+
+三条证明写在指令里：
+
+1. **`sizeof(x++)` 没有生成任何求值代码**——既没有读 x，更没有自增，`a` 直接被赋予立即数 4。"sizeof 不执行表达式"不是文档口号，是**编译器直接把表达式扔了**；
+2. **类型大小烧成立即数**：`4/4/8/8` 一目了然——sizeof 是编译期运算，运行期"查表"都不存在；
+3. `x` 在最后被读时仍是 5——退出码 29（而不是假如执行了 x++ 的 30）实测印证。
+
+### 附带收获：从 sizeof 读出数据模型
+
+```text
+sizeof(char)=1  sizeof(int)=4  sizeof(long)=8  sizeof(void*)=8
+```
+
+→ 这就是 **LP64**（Linux/macOS 64位）的数据模型：long 和 pointer 是8字节。对照 Windows 的 **LLP64**（long=4、指针=8）——所以跨平台代码里 `long` 不可靠、定宽类型 `int64_t` 才是正解（见[标准库·stdint](标准库.md)）。
+
 ## 小结
 
-1. sizeof 编译期求值（VLA除外），表达式不执行；
+1. sizeof 编译期求值（VLA除外），表达式不执行——实测 `sizeof(x++)` 连一条读x的指令都没有；
 2. 数组传参退化为指针，sizeof 只能测"本作用域的数组"；
 3. `sizeof(arr)/sizeof(arr[0])` 计算元素个数；
-4. sizeof 结果是 size_t（无符号），注意与负数比较的坑。
+4. sizeof 结果是 size_t（无符号），注意与负数比较的坑；
+5. 新增实测：sizeof 的答案是**指令里的立即数**；从立即数还能读出平台数据模型（LP64）。
