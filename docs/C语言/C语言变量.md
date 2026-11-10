@@ -237,13 +237,162 @@ main:
 
 **三行代码，三种寻址方式**：栈相对寻址（局部）、静态区符号（全局/static）。
 
+## 实战：编译提取汇编逐行解析（真实输出）
+
+> 以下汇编全部为**真实编译产物**，指令逐字来自 gcc 输出，`;` 注释为整理所加。提取流程见 `.opencode/skills/c-dev/SKILL.md`；环境噪音说明见[数组·实战](数组.md)。
+> 实测环境：Ubuntu 24.04 / gcc 13.3.0 / x86-64（System V ABI）/ Intel 语法
+
+### 实验1：局部 / 全局 / static —— 三种变量的三种归宿
+
+```c
+int g = 100;              /* 全局：.data，符号导出 */
+static int sg = 5;        /* 静态全局：.data，符号不导出 */
+
+int addrs(void)
+{
+    int local = 7;        /* 局部：栈 */
+    static int sl = 0;    /* 静态局部：值0 → .bss */
+    sl += local + g + sg;
+    return sl;            /* 112 → 实测退出码112 ✔ */
+}
+```
+
+```asm
+	.globl	g                    ; ★g有.globl——符号导出，别的文件可extern
+	.data                        ; g进.data（初值100落盘）
+g:
+	.long	100
+	.align 4                     ; ★sg前面没有.globl——static=内部符号！
+	.type	sg, @object
+sg:                             ; sg同样进.data（初值5落盘）
+	.long	5
+
+addrs:
+    endbr64
+    push    rbp
+    mov     rbp, rsp
+    mov     DWORD PTR -4[rbp], 7        ; local=7：rbp相对寻址（栈）
+    mov     edx, DWORD PTR g[rip]       ; 读g：rip相对寻址（静态区）
+    mov     eax, DWORD PTR -4[rbp]      ; 读local
+    add     edx, eax
+    mov     eax, DWORD PTR sg[rip]      ; 读sg：同样是rip相对
+    add     edx, eax
+    mov     eax, DWORD PTR sl.0[rip]    ; ★读sl.0：静态局部的"装饰名"！
+    add     eax, edx
+    mov     DWORD PTR sl.0[rip], eax    ; 写回sl.0
+    mov     eax, DWORD PTR sl.0[rip]
+    pop     rbp
+    ret
+	.local	sl.0                   ; 声明为local符号
+	.comm	sl.0,4,4               ; ★static局部（初值0）进COMMON/bss
+```
+
+`nm` 实测符号表——三种身份一目了然：
+
+```text
+$ nm a.out | grep -E "g|sg|sl"
+0000000000004010 D g          ; 大写D = .data + 导出（全局）
+0000000000004014 d sg         ; ★小写d = .data + 不导出（static全局）
+000000000000401c b sl.0       ; ★小写b = .bss + 不导出（static局部，名字被装饰）
+```
+
+结论表：
+
+| 变量 | 段 | 寻址 | 符号导出? | 生命周期 |
+| --- | --- | --- | --- | --- |
+| 局部 `local` | 栈 | `[rbp-4]` | （无符号） | 函数期间 |
+| 全局 `g` | .data | `g[rip]` | ✔（D） | 全程 |
+| static全局 `sg` | .data | `sg[rip]` | ✘（d） | 全程 |
+| static局部 `sl` | .bss | `sl.0[rip]` | ✘（b，名字带装饰） | **全程**（作用域仍在函数内！） |
+
+**static局部变量的"分离人格"实锤**：作用域是函数（别的代码摸不着），但住在 .bss（函数返回它不死）——汇编和符号表双重印证。
+
+### 实验2：未初始化变量的真面目 —— 局部连指令都没有
+
+```c
+int g_uninit;                 /* 全局未初始化 → .bss */
+int g_init = 42;              /* 全局已初始化 → .data */
+
+int read_uninit_local(void)  { int x; return x; }   /* 读栈上垃圾 */
+int read_uninit_global(void) { return g_uninit; }   /* 保证0 */
+```
+
+```asm
+	.globl	g_uninit
+	.bss                          ; ★全局未初始化：进.bss
+g_uninit:
+	.zero	4                      ; 文件里只记"4字节零"，不占体积
+	.globl	g_init
+	.data
+g_init:
+	.long	42                     ; 初值落盘
+
+read_uninit_local:
+    endbr64
+    push    rbp
+    mov     rbp, rsp
+    mov     eax, DWORD PTR -4[rbp]   ; ★★读[rbp-4]——但上面没有任何写它的指令！
+    pop     rbp                        ; 读到的是上一个函数留在这的垃圾
+    ret
+
+read_uninit_global:
+    endbr64
+    push    rbp
+    mov     rbp, rsp
+    mov     eax, DWORD PTR g_uninit[rip]  ; 读bss——加载器已清零，必得0
+    pop     rbp
+    ret
+```
+
+**"局部变量不初始化=随机值"的指令级证据**：`read_uninit_local` 对 `[rbp-4]` **只读不写**——这个槽位的内容是上一个函数的残骸。与之相反，全局未初始化变量由**加载器把 .bss 映射为零页**，读必得0。实测 `read_uninit_global()` 恒返回0 ✔。
+
+### 实验3：volatile —— 强制"每次都真读"
+
+```c
+int plain_sum(int v)               { return v + v + v; }
+int volatile_sum(volatile int v)   { return v + v + v; }
+```
+
+**-O2 真实输出对比**：
+
+```asm
+plain_sum:
+    endbr64
+    lea     eax, [rdi+rdi*2]       ; ★v+v+v 被算成 3v：读rdi一次，一条lea搞定
+    ret
+
+volatile_sum:
+    endbr64
+    mov     DWORD PTR -4[rsp], edi ; volatile：先搬到内存（真存储）
+    mov     eax, DWORD PTR -4[rsp] ; 第1次读
+    mov     ecx, DWORD PTR -4[rsp] ; 第2次读 —— 每次使用都必须重新读！
+    mov     edx, DWORD PTR -4[rsp] ; 第3次读
+    add     eax, ecx
+    add     eax, edx
+    ret
+```
+
+**volatile 的机器含义**：禁止"读一次存寄存器反复用"的优化，每次访问都生成真实访存指令。这正是 MMIO 寄存器（状态位可能随时被硬件改变）、信号/多线程共享变量必须加 volatile 的原因——不加，`while (*status & 1)` 会被优化成"读一次死循环"。
+
+### 汇编视角总结表（全部实测）
+
+| C声明 | 段 | 寻址 | nm符号 |
+| --- | --- | --- | --- |
+| 局部 `int x` | 栈 | `[rbp-N]` | — |
+| `int g=100` | .data | `g[rip]` | `D g` |
+| `static int sg=5` | .data | `sg[rip]` | `d sg`（不导出） |
+| `int gu;`（未初始化） | .bss | `gu[rip]` | `B gu` |
+| 函数内 `static int sl=0` | .bss | `sl.0[rip]` | `b sl.0`（装饰名） |
+| `volatile int v` | 照常 | **每次访问都真访存** | — |
+
 ## 小结
 
 1. 变量是编译期的名字，运行期全是地址；
 2. 定义唯一、声明可多，extern 跨文件；
 3. static 改的是**生命周期（局部）和可见性（全局/函数）**；
-4. 局部变量不初始化 = 随机值，永远显式初始化；
-5. 指针大小由平台位数决定。
+4. 局部变量不初始化 = 随机值，永远显式初始化——实测它的读指令连配对的写指令都没有；
+5. 指针大小由平台位数决定；
+6. 新增实测：局部=rbp相对、全局/static=rip相对；static局部住 .bss 带装饰名；volatile=每次真访存。
 
 ## 延伸
 
