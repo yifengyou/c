@@ -91,24 +91,27 @@ gcc hello.o -o hello        # 4.链接：合并目标文件与库，重定位符
 
 ## 从汇编看本质
 
-用 `gcc -S` 看看 main 编译成什么样的汇编（x86-64 AT&T 风格）：
+用 `gcc -S` 提取真实汇编（实测：gcc 13.3.0 / x86-64 / Intel语法 / -O0）：
 
 ```asm
 main:
-    push    rbp                 ; 建立栈帧
+    endbr64                        ; CET保护前缀（现代gcc标配，忽略）
+    push    rbp                    ; 建立栈帧
     mov     rbp, rsp
-    mov     edi, OFFSET FLAT:.LC0   ; "Hello, C!\n" 的地址 → 第1个参数
-    call    puts                ; printf("\n"结尾)被优化成 puts
-    mov     eax, 0              ; 返回值 0 放入 eax
-    pop     rbp                 ; 恢复栈帧
-    ret                         ; 返回调用者(__libc_start_main)
+    lea     rax, .LC0[rip]         ; "Hello, C!\n" 的地址（rodata）→ rax
+    mov     rdi, rax               ; 第1个参数 → rdi
+    call    puts@PLT               ; ★printf被优化成puts！
+    mov     eax, 0                 ; 返回值 0 放入 eax
+    pop     rbp                    ; 恢复栈帧
+    ret                            ; 返回调用者(__libc_start_main)
 ```
 
 可以看出：
 
 1. **函数就是一段指令**，`call` 跳过去执行，`ret` 跳回来；
-2. **参数通过寄存器/栈传递**，返回值放 `eax/rax`；
-3. **字符串常量被放到常量区**（.rodata），传给函数的是**地址**。
+2. **参数通过寄存器传递**（rdi），返回值放 `eax`——详见[参数传递](../汇编/参数传递.md)；
+3. **字符串常量被放到常量区**（.rodata），传给函数的是**地址**——详见[常量区](常量区.md)；
+4. 意外收获：`printf("Hello, C!\n")` 被gcc编译成 `puts`——无格式符且以\n结尾时，puts更高效，**编译器比你想象的更会优化**。
 
 ## 应用领域
 
